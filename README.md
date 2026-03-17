@@ -14,6 +14,7 @@ Make sure the following are installed on your system:
 - MySQL 5.7 or newer
 - Git
 - XAMPP / WAMP / MAMP (recommended)
+- Visual Studio Code
 
 Check your PHP version:
 
