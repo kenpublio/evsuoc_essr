@@ -3,54 +3,48 @@ name: Test Deploy to Hostinger
 on:
   push:
     branches:
-      - main
+      - prod
   workflow_dispatch:
 
 concurrency:
-  group: hostinger-prod-deploy
+  group: deploy-hostinger
   cancel-in-progress: false
-
+      
 jobs:
   deploy:
     name: Upload files and run database migrations
     runs-on: ubuntu-latest
-    env:
-      HOSTINGER_HOST: ${{ secrets.HOSTINGER_HOST }}
-      HOSTINGER_PORT: ${{ secrets.HOSTINGER_PORT }}
-      HOSTINGER_USER: ${{ secrets.HOSTINGER_USER }}
-      HOSTINGER_PATH: ${{ secrets.HOSTINGER_PATH }}
     steps:
-      - name: Checkout production code
+      - name: Checkout production code  
         uses: actions/checkout@v4
 
       - name: Configure SSH access
         shell: bash
         run: |
-          # Stop the workflow if any command fails
+          # Stop the workflow if any command fails 
           set -euo pipefail
-          # Create SSH folder used by the runner
+          # Create SSH folder used by the runner  
           mkdir -p ~/.ssh
-          # Write the Hostinger private key from GitHub Secrets into a temporary key file
-          printf '%s\n' "${{ secrets.HOSTINGER_SSH_PRIVATE_KEY }}" > ~/.ssh/hostinger_key
-          # Restrict the key permissions to read and write
+          # Write the Hostinger private key from GitHub Secrets into a temporary key file 
+          printf '%s\n' "${{ secrets.HOSTINGER_PRIVATE_KEY }}" > ~/.ssh/hostinger_key
+          # Restrict the permissions to read and write 
           chmod 600 ~/.ssh/hostinger_key
-          # Save Hostinger's server fingerprint so SSH can connect from GitHub to Hostinger
-          ssh-keyscan -p "$HOSTINGER_PORT" "$HOSTINGER_HOST" >> ~/.ssh/known_hosts
+          # Save Hostinger's server fingerprint so SSH can connect from GitHub to Hostinger 
+          ssh-keyscan -p 65002 145.79.14.190 >> ~/.ssh/known_hosts
+
+      - name: Test SSH Connection
+        shell: bash
+        run: |
+          set -euo pipefail
+          ssh -i ~/.ssh/hostinger_key -p 65002 u656591888@145.79.14.190 "echo 'SSH connection successful'"
 
       - name: Upload new and modified files
         shell: bash
         run: |
-          # Stop the workflow if any command fails
           set -euo pipefail
-          # Store the SSH command so that RSYNC will be able to connect to Hostinger
-          RSYNC_SSH="ssh -i ~/.ssh/hostinger_key -p $HOSTINGER_PORT"
-          # Build the RSYNC option list
+          RSYNC_SSH="ssh -i ~/.ssh/hostinger_key -p 65002" 
           RSYNC_OPTIONS=(
-            # Archive mode
-            -a
-            # Compression mode
-            -z
-            # Folders and files below are excluded to be uploaded to Hostinger
+            -avz
             --exclude ".git/"
             --exclude ".github/"
             --exclude "node_modules/"
@@ -58,11 +52,10 @@ jobs:
             --exclude "package-lock.json"
             --exclude "package.json"
           )
-          rsync "${RSYNC_OPTIONS[@]}" -e "$RSYNC_SSH" ./ "$HOSTINGER_USER@$HOSTINGER_HOST:$HOSTINGER_PATH/"
+          rsync "${RSYNC_OPTIONS[@]}" -e "$RSYNC_SSH" ./ u656591888@145.79.14.190:/home/u656591888/domains/yourdomain.com/public_html/
 
       - name: Run database migrations
         shell: bash
         run: |
-          # Stop the workflow if any command fails
           set -euo pipefail
-          ssh -i ~/.ssh/hostinger_key -p "$HOSTINGER_PORT" "$HOSTINGER_USER@$HOSTINGER_HOST" "cd '$HOSTINGER_PATH' && php app/run_migrations.php"
+          ssh -i ~/.ssh/hostinger_key -p 65002 u656591888@145.79.14.190 "cd /home/u656591888/domains/yourdomain.com/public_html && php app/run_migrations.php"
