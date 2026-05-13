@@ -9,8 +9,7 @@ on:
 concurrency:
   group: deploy-hostinger
   cancel-in-progress: false
-  
-    
+      
 jobs:
   deploy:
     name: Upload files and run database migrations
@@ -20,7 +19,6 @@ jobs:
       HOSTINGER_PORT: ${{ secrets.HOSTINGER_PORT }}
       HOSTINGER_USER: ${{ secrets.HOSTINGER_USER }}
       HOSTINGER_PATH: ${{ secrets.HOSTINGER_PATH }}
-
     steps:
       - name: Checkout production code  
         uses: actions/checkout@v4
@@ -38,8 +36,6 @@ jobs:
           chmod 600 ~/.ssh/hostinger_key
           # Save Hostinger's server fingerprint so SSH can connect from GitHub to Hostinger 
           ssh-keyscan -p "$HOSTINGER_PORT" "$HOSTINGER_HOST" >> ~/.ssh/known_hosts
-
-
 
       - name: Upload new and modified files
         shell: bash
@@ -62,15 +58,14 @@ jobs:
             --exlude ".package-lock.json/"
             --exlude ".package.json/"
           )
-          rsynk ${RSYNC_OPTIONS[@]}" -e "$RSYNC_SSH" ./ "$HOSTINGER_USER@$HOSTINGER_HOST:$HOSTINGER_PATH/"
+          rsynk "${RSYNC_OPTIONS[@]}" -e "$RSYNC_SSH" ./ "$HOSTINGER_USER@$HOSTINGER_HOST:$HOSTINGER_PATH/"
 
       - name: Run database migrations
         shell: bash
         run: |
           # Stop the workflow if any command fails 
           set -euo pipefail
-          # Connect to Hostinger and run the database migration command 
-          ssh -i ~/.ssh/hostinger_key -p "$HOSTINGER_PORT" "$HOSTINGER_USER@$HOSTINGER_HOST" "cd $HOSTINGER_PATH && php app/run_migrations.php"
+          ssh -i ~/.ssh/hostinger_key -p "$HOSTINGER_PORT" "$HOSTINGER_USER@$HOSTINGER_HOST" "cd '$HOSTINGER_PATH' && php app/run_migrations.php"
 
           
        
