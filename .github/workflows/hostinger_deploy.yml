@@ -3,13 +3,13 @@ name: Test Deploy to Hostinger
 on:
   push:
     branches:
-      - prod
+      - main
   workflow_dispatch:
 
 concurrency:
-  group: deploy-hostinger
+  group: hostinger-prod-deploy
   cancel-in-progress: false
-       
+
 jobs:
   deploy:
     name: Upload files and run database migrations
@@ -20,45 +20,37 @@ jobs:
       HOSTINGER_USER: ${{ secrets.HOSTINGER_USER }}
       HOSTINGER_PATH: ${{ secrets.HOSTINGER_PATH }}
     steps:
-      - name: Checkout production code  
+      - name: Checkout production code
         uses: actions/checkout@v4
 
       - name: Configure SSH access
         shell: bash
         run: |
-          # Stop the workflow if any command fails 
+          # Stop the workflow if any command fails
           set -euo pipefail
-          # Create SSH folder used by the runner  
+          # Create SSH folder used by the runner
           mkdir -p ~/.ssh
           # Write the Hostinger private key from GitHub Secrets into a temporary key file
-          # Using echo instead of printf to avoid format issues with the key
-          echo "${{ secrets.HOSTINGER_PRIVATE_KEY }}" > ~/.ssh/hostinger_key
-          # Restrict the permissions to read and write 
+          printf '%s\n' "${{ secrets.HOSTINGER_SSH_PRIVATE_KEY }}" > ~/.ssh/hostinger_key
+          # Restrict the key permissions to read and write
           chmod 600 ~/.ssh/hostinger_key
-          # Verify the SSH key format is valid before proceeding
-          if ! ssh-keygen -l -f ~/.ssh/hostinger_key > /dev/null 2>&1; then
-            echo "ERROR: SSH key format is invalid or corrupted"
-            exit 1
-          fi
-          # Save Hostinger's server fingerprint so SSH can connect from GitHub to Hostinger 
-          ssh-keyscan -p "$HOSTINGER_PORT" "$HOSTINGER_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
+          # Save Hostinger's server fingerprint so SSH can connect from GitHub to Hostinger
+          ssh-keyscan -p "$HOSTINGER_PORT" "$HOSTINGER_HOST" >> ~/.ssh/known_hosts
 
       - name: Upload new and modified files
         shell: bash
         run: |
-          # Stop the workflow if any command fails 
+          # Stop the workflow if any command fails
           set -euo pipefail
-          # Store the SSH command so that RSYNC will be able to connect to Hostinger 
-          RSYNC_SSH="ssh -i ~/.ssh/hostinger_key -p $HOSTINGER_PORT -o StrictHostKeyChecking=no" 
-          # Build the RSYNC options list
+          # Store the SSH command so that RSYNC will be able to connect to Hostinger
+          RSYNC_SSH="ssh -i ~/.ssh/hostinger_key -p $HOSTINGER_PORT"
+          # Build the RSYNC option list
           RSYNC_OPTIONS=(
-            # Archive mode 
-            -a 
+            # Archive mode
+            -a
             # Compression mode
             -z
-            # Verbose output for debugging
-            -v
-            # Folders and files below are excluded to be uploaded to Hostinger 
+            # Folders and files below are excluded to be uploaded to Hostinger
             --exclude ".git/"
             --exclude ".github/"
             --exclude "node_modules/"
@@ -71,7 +63,6 @@ jobs:
       - name: Run database migrations
         shell: bash
         run: |
-          # Stop the workflow if any command fails 
+          # Stop the workflow if any command fails
           set -euo pipefail
-          # Use StrictHostKeyChecking=no since we already added the host key
-          ssh -i ~/.ssh/hostinger_key -p "$HOSTINGER_PORT" -o StrictHostKeyChecking=no "$HOSTINGER_USER@$HOSTINGER_HOST" "cd '$HOSTINGER_PATH' && php app/run_migrations.php"
+          ssh -i ~/.ssh/hostinger_key -p "$HOSTINGER_PORT" "$HOSTINGER_USER@$HOSTINGER_HOST" "cd '$HOSTINGER_PATH' && php app/run_migrations.php"
