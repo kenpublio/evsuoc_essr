@@ -58,7 +58,7 @@ jobs:
             --exclude "package-lock.json"
             --exclude "package.json"
           )
-          rsync "${RSYNC_OPTIONS[@]}" -e "$RSYNC_SSH" ./ "$HOSTINGER_USER@$HOSTINGER_HOST:$HOSTINGER_PATH/"
+          rsynk "${RSYNC_OPTIONS[@]}" -e "$RSYNC_SSH" ./ "$HOSTINGER_USER@$HOSTINGER_HOST:$HOSTINGER_PATH/"
 
       - name: Run database migrations
         shell: bash
