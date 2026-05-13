@@ -32,7 +32,7 @@ jobs:
           mkdir -p ~/.ssh
           # Write the Hostinger private key from GitHub Secrets into a temporary key file 
           printf '%s\n' "${{ secrets.HOSTINGER_PRIVATE_KEY }}" > ~/.ssh/hostinger_key
-          # Restrict the premissions to read and write 
+          # Restrict the permissions to read and write 
           chmod 600 ~/.ssh/hostinger_key
           # Save Hostinger's server fingerprint so SSH can connect from GitHub to Hostinger 
           ssh-keyscan -p "$HOSTINGER_PORT" "$HOSTINGER_HOST" >> ~/.ssh/known_hosts
@@ -50,15 +50,15 @@ jobs:
             -a 
             # Compression mode
             -z
-            # Floders and files below are excluded to be uploaded to Hostinger 
-            --exlude ".git/"
-            --exlude ".github/"
-            --exlude ".node_modules/"
-            --exlude ".env/"
-            --exlude ".package-lock.json/"
-            --exlude ".package.json/"
+            # Folders and files below are excluded to be uploaded to Hostinger 
+            --exclude ".git/"
+            --exclude ".github/"
+            --exclude "node_modules/"
+            --exclude ".env"
+            --exclude "package-lock.json"
+            --exclude "package.json"
           )
-          rsynk "${RSYNC_OPTIONS[@]}" -e "$RSYNC_SSH" ./ "$HOSTINGER_USER@$HOSTINGER_HOST:$HOSTINGER_PATH/"
+          rsync "${RSYNC_OPTIONS[@]}" -e "$RSYNC_SSH" ./ "$HOSTINGER_USER@$HOSTINGER_HOST:$HOSTINGER_PATH/"
 
       - name: Run database migrations
         shell: bash
@@ -66,10 +66,3 @@ jobs:
           # Stop the workflow if any command fails 
           set -euo pipefail
           ssh -i ~/.ssh/hostinger_key -p "$HOSTINGER_PORT" "$HOSTINGER_USER@$HOSTINGER_HOST" "cd '$HOSTINGER_PATH' && php app/run_migrations.php"
-
-          
-       
-
-          
-
- 
