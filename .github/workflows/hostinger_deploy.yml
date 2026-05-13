@@ -53,12 +53,12 @@ jobs:
             # Folders and files below are excluded to be uploaded to Hostinger 
             --exclude ".git/"
             --exclude ".github/"
-            --exclude "node_modules/"
+            --exclude ".node_modules/"
             --exclude ".env"
             --exclude "package-lock.json"
             --exclude "package.json"
           )
-          rsynk "${RSYNC_OPTIONS[@]}" -e "$RSYNC_SSH" ./ "$HOSTINGER_USER@$HOSTINGER_HOST:$HOSTINGER_PATH/"
+          rsync "${RSYNC_OPTIONS[@]}" -e "$RSYNC_SSH" ./ "$HOSTINGER_USER@$HOSTINGER_HOST:$HOSTINGER_PATH/"
 
       - name: Run database migrations
         shell: bash
