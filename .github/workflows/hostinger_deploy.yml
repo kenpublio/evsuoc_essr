@@ -34,11 +34,6 @@ jobs:
           printf '%s\n' "${{ secrets.HOSTINGER_SSH_PRIVATE_KEY }}" > ~/.ssh/hostinger_key
           # Restrict the key permissions to read and write
           chmod 600 ~/.ssh/hostinger_key
-          # Validate SSH key format
-          if ! ssh-keygen -l -f ~/.ssh/hostinger_key > /dev/null 2>&1; then
-            echo "ERROR: Invalid SSH key format"
-            exit 1
-          fi
           # Save Hostinger's server fingerprint so SSH can connect from GitHub to Hostinger
           ssh-keyscan -p "$HOSTINGER_PORT" "$HOSTINGER_HOST" >> ~/.ssh/known_hosts 2>/dev/null
 
